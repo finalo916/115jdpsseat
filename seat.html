@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>115學年度資優鑑定初選 - 劃位與查詢系統 (全景導航版)</title>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f4f7f6; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .header { background: #2c3e50; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; flex-shrink: 0; }
+        .mode-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        
+        .main-container { display: flex; flex: 1; height: calc(100vh - 50px); overflow: hidden; }
+        
+        /* 側邊欄 */
+        .sidebar { width: 340px; background: white; padding: 20px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 5; flex-shrink: 0; }
+        .panel { border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa; margin-bottom: 10px; }
+        .panel h3 { margin-top: 0; font-size: 16px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        
+        /* 場地尺寸設定區 */
+        .size-setup { display: flex; gap: 15px; margin-bottom: 10px; align-items: flex-end; width: 100%; }
+        .size-setup div { display: flex; flex-direction: column; flex: 1; }
+        .size-setup label { font-size: 13px; color: #7f8c8d; font-weight: bold; margin-bottom: 5px; }
+        .size-setup input { width: 100%; padding: 8px; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; font-weight: bold; text-align: center; box-sizing: border-box; transition: 0.2s; }
+        .size-setup input:focus { border-color: #3498db; outline: none; }
+        
+        .numbering-setup { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
+        .numbering-setup strong { font-size: 13px; color: #34495e; display: block; margin-bottom: 5px; }
+        .numbering-setup label { display: block; font-size: 13px; color: #2c3e50; cursor: pointer; margin-bottom: 6px; }
+
+        /* 工具與按鈕 */
+        .tool-btn { padding: 8px 12px; border: 2px solid transparent; border-radius: 4px; cursor: pointer; text-align: center; margin-bottom: 8px; font-weight: bold; font-size: 14px; transition: 0.2s; display: flex; align-items: center; gap: 5px; }
+        .tool-btn.active { border-color: #2c3e50; transform: scale(1.02); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tool-seat { background: #dff9fb; color: #0984e3; }
+        .tool-reserved { background: #fff3cd; color: #856404; }
+        .tool-stair { background: #dfe6e9; color: #2d3436; }
+        .tool-empty { background: #fff; border: 2px dashed #b2bec3; color: #636e72; }
+        
+        button { background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; margin-bottom: 5px; }
+        button:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #219653; }
+        .btn-export-web { background: #e84393; font-size: 16px; padding: 15px; }
+        .btn-export-web:hover { background: #d63031; }
+        .btn-io { flex: 1; font-size: 14px; padding: 10px; }
+        
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; font-size: 14px; }
+        textarea { width: 100%; height: 80px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 8px; box-sizing: border-box; resize: vertical; font-size: 12px; line-height: 1.5; font-family: monospace; }
+
+        .stats-box { background: #e8f4fd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; color: #2c3e50; border: 1px solid #bde0fe; }
+        .stats-box span { font-weight: bold; color: #e74c3c; font-size: 16px; }
+
+        .zone-item { background: white; border: 1px solid #ddd; padding: 8px; margin-bottom: 5px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .zone-item.active { border: 2px solid #e74c3c; background: #fff5f5; font-weight: bold; }
+        .zone-color-picker { -webkit-appearance: none; border: none; width: 22px; height: 22px; cursor: pointer; border-radius: 4px; background: transparent; padding: 0; }
+        .zone-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        .zone-color-picker::-webkit-color-swatch { border: 1px solid #bdc3c7; border-radius: 4px; }
+
+        .person-item { background: white; border: 1px solid #ddd; padding: 8px; margin-bottom: 5px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .person-item.active { border-color: #e74c3c; background: #ffeaea; }
+        .badge { font-size: 11px; padding: 2px 6px; border-radius: 10px; background: #eee; }
+
+        /* 地圖共用區 */
+        .map-wrapper { flex: 1; position: relative; overflow: hidden; background: #1e272e; cursor: grab; }
+        .map-wrapper:active { cursor: grabbing; }
+        
+        /* 🚨 核心座標系修改：將中心點改為 0 0 (左上角)，方便精算置中與小地圖同步 */
+        .map-container { position: absolute; transform-origin: 0 0; padding: 80px; width: max-content; display: flex; flex-direction: column; align-items: center; }
+        
+        .stage { background: #eccc68; color: #2f3542; padding: 20px 200px; border-radius: 8px; font-weight: bold; font-size: 24px; letter-spacing: 20px; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center; line-height: 1.5; }
+        
+        /* 設施標示 */
+        .rear-facility { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 30px; width: 100%; color: #fff; font-weight: bold; }
+        .facility-box { background: #7f8c8d; padding: 12px 30px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 2px solid #95a5a6; letter-spacing: 2px; text-align: center; }
+        .facility-door { background: #95a5a6; padding: 10px 40px; border-radius: 4px; border-top: 4px solid #bdc3c7; }
+        .facility-stair-end { background: #576574; padding: 10px 15px; border-radius: 4px; border: 2px solid #4a5561; font-size: 12px; }
+        .facility-audio { background: #34495e; padding: 20px 80px; border-radius: 8px; border: 2px solid #2c3e50; font-size: 18px; letter-spacing: 10px; }
+
+        /* 版型編輯器小格子 */
+        .editor-row { display: flex; align-items: center; margin-bottom: 4px; justify-content: center; }
+        .row-label { color: #a4b0be; font-weight: bold; font-size: 14px; width: 45px; text-align: right; padding-right: 10px; flex-shrink: 0;}
+        .editor-cell { width: 35px; height: 35px; margin-right: 3px; border: 1px solid #ccc; border-radius: 3px; cursor: crosshair; user-select: none; transition: 0.1s; display: flex; justify-content: center; align-items: center; font-size: 10px; font-family: monospace; font-weight: bold; flex-shrink: 0; }
+        .capacity-label { width: 90px; font-size: 13px; font-weight: bold; color: #e67e22; text-align: left; padding-left: 15px; flex-shrink: 0; }
+        
+        .state-seat { background: #74b9ff; color: white; border-color: #0984e3; }
+        .state-stair { background: #b2bec3; color: white; border-color: #636e72; font-size: 12px; }
+        .state-reserved { background: #ffeaa7; color: #b33939; border-color: #f6b93b; font-size: 12px; }
+        .state-empty { background: transparent; color: transparent; border-color: #dfe6e9; border-style: dashed; }
+
+        /* 大型劃位區塊 */
+        .theater-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 6px; align-items: center; }
+        .block { width: 65px; height: 50px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; flex-shrink: 0; box-sizing: border-box; }
+        .seat-cell-large { border: 1px solid #ced6e0; background: #f1f2f6; cursor: pointer; transition: transform 0.2s, border-color 0.2s, background-color 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .seat-cell-large:hover { border-color: #3498db; background: #fff; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 2; }
+        .seat-cell-large.assigned { background: #fff; border: 2px solid; }
+        
+        .seat-top-bar { position: absolute; top: 2px; left: 3px; right: 3px; display: flex; justify-content: center; align-items: baseline; gap: 4px; pointer-events: none; }
+        .seat-room { display: none; } 
+        .seat-id { display: block; font-family: monospace; font-weight: bold; font-size: 11px; color: #2c3e50; }
+        body.show-room .seat-room { display: block; font-size: 11px; color: #e74c3c; font-weight: 900; }
+        body.show-room .seat-id { display: none; }
+
+        .seat-content { font-weight: bold; color: #2f3542; pointer-events: none; line-height: 1.1; font-size: 13px; text-align: center; width: 100%; margin-top: 8px; }
+        .seat-zone { font-size: 9px; position: absolute; bottom: 2px; right: 2px; border-radius: 2px; padding: 1px 4px; color: white; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        
+        .stair-block { background: #576574; color: #c8d6e5; font-size: 12px; font-weight: bold; }
+        .reserved-block { border: 1px dashed #f39c12; background: rgba(243, 156, 18, 0.15); color: #e67e22; font-size: 12px; font-weight: bold; }
+        .empty-block { visibility: hidden; }
+
+        .zone-allocation-mode .seat-top-bar { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .zone-allocation-mode .seat-id { font-size: 16px; font-weight: 900; }
+
+        /* 視角翻轉 */
+        .direction-reversed { display: flex; flex-direction: column-reverse !important; }
+        .direction-reversed .theater-row { flex-direction: row-reverse !important; }
+        .direction-reversed .rear-facility { flex-direction: row-reverse !important; }
+        .direction-reversed .row-label { padding-right: 0; padding-left: 10px; text-align: left; }
+
+        @keyframes pulse-ring { 
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.8); } 
+            70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } 
+        }
+        .highlighted-seat { border: 3px solid #ff4757 !important; background: #ffefef !important; transform: scale(1.15) !important; z-index: 10 !important; animation: pulse-ring 1.5s infinite !important; }
+
+        .zoom-controls { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; gap: 10px; z-index: 10; }
+
+        /* 🗺️ 全景縮圖 (Minimap) 樣式 */
+        .minimap-wrapper { position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.9); border: 2px solid #bdc3c7; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; overflow: hidden; cursor: crosshair; }
+        .minimap-viewport { position: absolute; border: 2px solid #e74c3c; background: rgba(231, 76, 60, 0.2); box-sizing: border-box; pointer-events: none; transition: 0.1s ease-out; }
+
+        @media (max-width: 800px) {
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 40vh; border-bottom: 2px solid #bdc3c7; padding: 15px; }
+            .map-wrapper { height: 60vh; }
+            .zoom-controls { bottom: 10px; right: 10px; transform: scale(0.85); transform-origin: bottom right; }
+            .minimap-wrapper { display: none; } /* 手機版隱藏縮圖省空間 */
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div class="header">
+    <h2 id="pageTitle">🏫 資優鑑定座位劃位系統</h2>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap; justify-content: center;">
+        <label style="color:#eccc68; font-size:14px; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="toggleRoomId" onchange="toggleRoomDisplay()"> 顯示試場編號
+        </label>
+        <div id="modeIndicator" class="mode-badge" style="background:#e74c3c; color:white;">步驟一：版型微調</div>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="sidebar">
+        <div id="step1-panel">
+            <div class="panel">
+                <h3>1. 設定場地與版型</h3>
+                <div class="size-setup">
+                    <div><label>總列數 (排)</label><input type="number" id="inputRows" value="17"></div>
+                    <div style="font-size:18px; color:#bdc3c7; font-weight:bold; margin-bottom:8px; flex:0;">×</div>
+                    <div><label>總欄數 (格)</label><input type="number" id="inputCols" value="38"></div>
+                    <button onclick="rebuildGrid()" style="background:#8e44ad; height: 38px; width:60px;">重設</button>
+                </div>
+                
+                <div class="numbering-setup">
+                    <strong>🔢 座號編排模式：</strong>
+                    <label><input type="radio" name="numMode" value="absolute" checked onchange="changeNumMode()"> 絕對座標 (包含空地)</label>
+                    <label><input type="radio" name="numMode" value="sequential" onchange="changeNumMode()"> 連續編號 (僅算有效座位，由右至左)</label>
+                </div>
+                
+                <div class="numbering-setup">
+                    <strong>🏷️ 後方設施標示 (以逗號分隔)：</strong>
+                    <input type="text" id="facilityInput" value="門, 2F 階梯, 音控室, 2F 階梯, 門" onchange="refreshFacilities()" style="margin-top:5px;">
+                </div>
+
+                <hr style="border:0; border-top:1px solid #eee; margin: 15px 0;">
+                <div class="tool-btn tool-seat active" onclick="setTool('seat')">🪑 有效座位</div>
+                <div class="tool-btn tool-reserved" onclick="setTool('reserved')">🔒 保留席</div>
+                <div class="tool-btn tool-stair" onclick="setTool('stair')">🪜 階梯走道</div>
+                <div class="tool-btn tool-empty" onclick="setTool('empty')">🧽 橡皮擦 (角落隱藏)</div>
+                <button onclick="toggleEditorDisplay()" id="toggleBtn" style="background:#7f8c8d; font-size:12px; margin-top:5px;">🔄 切換編號顯示 (相對/絕對)</button>
+            </div>
+            <button class="btn-success" onclick="goToStep2()" style="padding: 15px; font-size:16px;">✅ 鎖定版型，分配考區</button>
+        </div>
+
+        <div id="step2-panel" style="display: none;">
+            <div class="panel">
+                <h3>2. 考區劃分</h3>
+                <div class="stats-box" id="zoneSummary"></div>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="newZoneInput" placeholder="輸入考區名稱 (例: 九德國小)">
+                    <button onclick="addZone()" style="width:60px;">新增</button>
+                </div>
+                <div id="zoneList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
+                <small style="color:#e74c3c;">💡 左鍵拖曳塗色 / 右鍵拖曳擦除</small>
+            </div>
+            <div class="panel">
+                <h3>📁 分享設定檔</h3>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-io" onclick="downloadZoneConfig()" style="background:#8e44ad;">📤 下載</button>
+                    <input type="file" id="configFile" style="display:none" accept=".json" onchange="uploadZoneConfig(event)">
+                    <button class="btn-io" onclick="document.getElementById('configFile').click()" style="background:#e67e22;">📥 上傳</button>
+                </div>
+            </div>
+            <button class="btn-success" onclick="goToStep3()" style="padding: 15px; font-size:16px;">✅ 進入人員排位</button>
+            <button onclick="backToStep1()" style="background: #95a5a6;">🔙 返回修改場地</button>
+        </div>
+
+        <div id="step3-panel" style="display: none;">
+            <div class="panel">
+                <h3>3. 安排主襄試人員</h3>
+                <button onclick="downloadTemplate()" style="background:#1abc9c; margin-bottom:10px;">⬇️ 下載 Excel 範例檔</button>
+                <textarea id="rosterInput" placeholder="請貼上名單資料..."></textarea>
+                <button onclick="loadRoster()">載入名單</button>
+                <div id="unassignedList" style="margin-top: 10px; max-height: 250px; overflow-y: auto;"></div>
+            </div>
+            <button class="btn-success" onclick="goToStep4()" style="padding: 15px; font-size: 16px;">🔒 鎖定並開啟查詢</button>
+            <button onclick="backToStep2()" style="background: #95a5a6;">🔙 返回劃分考區</button>
+        </div>
+
+        <div id="step4-panel" style="display: none;">
+            <div class="panel">
+                <h3>🔍 座位快速查詢</h3>
+                <input type="text" id="searchInput" onkeyup="searchSeat()" placeholder="輸入姓名、試場或座號(如3-17)...">
+                
+                <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
+                    <strong style="color: #34495e; font-size: 14px; display: block; margin-bottom: 8px;">🔄 視角方向</strong>
+                    <label style="cursor:pointer; display:inline-block; margin-right:15px; color:#2c3e50; font-weight:bold;">
+                        <input type="radio" name="viewDir" value="front" checked onchange="changeViewDirection()"> 面對舞台
+                    </label>
+                    <label style="cursor:pointer; display:inline-block; color:#2c3e50; font-weight:bold;">
+                        <input type="radio" name="viewDir" value="back" onchange="changeViewDirection()"> 背對舞台
+                    </label>
+                </div>
+            </div>
+            <button class="btn-export-web" onclick="exportStandaloneHTML()">🌐 匯出公開查詢版網頁</button>
+            <button onclick="backToStep3()" style="background: #95a5a6; margin-top:10px;">解鎖返回編輯</button>
+        </div>
+    </div>
+
+    <div class="map-wrapper" id="mapWrapper">
+        <div id="minimapWrapper" class="minimap-wrapper">
+            <canvas id="minimapCanvas"></canvas>
+            <div id="minimapViewport" class="minimap-viewport"></div>
+        </div>
+
+        <div class="map-container" id="mapContainer">
+            <div class="stage">舞 台 方 向<br><span style="font-size:12px; letter-spacing:2px; color:#7f8c8d;">(右至左編號)</span></div>
+            <div id="editorLayout"></div>
+            <div id="theaterLayout" style="display:none;"></div>
+        </div>
+        <div class="zoom-controls">
+            <button onclick="setZoom(0.1)" title="放大">➕</button>
+            <button onclick="setZoom(-0.1)" title="縮小">➖</button>
+            <button onclick="zoomToFit()" title="一鍵全景置中" style="background:#8e44ad;">🌍 全景</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let ROWS = 17, COLS = 38;
+    let mode = 'step1'; 
+    let currentZoomDefault = 0.85; 
+    let colorPalette = ['#e74c3c', '#3498db', '#9b59b6', '#f39c12', '#1abc9c', '#d35400', '#27ae60', '#8e44ad'];
+    let colorIdx = 0;
+    let numberingMode = 'absolute'; 
+    let seatMapConfig = {}; 
+    let zones = []; 
+    let activeZoneName = null;
+    let seatZoneMapping = {}; 
+    let rosterData = [];
+    let currentActivePerson = null; 
+    let totalValidSeats = 0; 
+    
+    let isLeftMouseDown = false, isRightMouseDown = false, isDraggingMap = false;
+
+    window.addEventListener('mousedown', (e) => {
+        if (e.button === 0) isLeftMouseDown = true;
+        if (e.button === 2) isRightMouseDown = true;
+    });
+    window.addEventListener('mouseup', (e) => {
+        if (e.button === 0) isLeftMouseDown = false;
+        if (e.button === 2) isRightMouseDown = false;
+        setTimeout(() => { isDraggingMap = false; }, 50);
+    });
+
+    let initialLayout = [
+        "XXXXXXOOOOOOSOOOOOOOOOOOOSOOOOOORRRRXX",
+        "XXOOOOOOOOOOSXOOOOOOOOOOOSOOOOOOOOOOXX",
+        "XXOOOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOOOXX",
+        "XOOOOOOOOOOOSXOOOOOOOOOOOSOOOOOOOOOOOX",
+        "XOOOOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOOOOX",
+        "XOOOOOOOOOOOSXOOOORROOOOOSOOOOOOOOOOOX",
+        "OOOOOOOOOOOOSOOOORRROOOOOSOOOOOOOOOOOO",
+        "OOOOOOOOOOOOSXOOOORROOOOOSOOOOOOOOOOOO",
+        "OOOOOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOOOOO",
+        "XOOOOOOOOOOOSXOOOOOOOOOOOSOOOOOOOOOOOX",
+        "XOOOOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOOOOX",
+        "XOOOOOOOOOOOSXOOOOOOOOOOOSOOOOOOOOOOOX",
+        "XOOOOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOOOOX",
+        "XXOOOOOOOOOOSXOOOOOOOOOOOSOOOOOOOOOOXX",
+        "XXOOOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOOOXX",
+        "XXXOOOOOOOOOSXOOOOOOOOOOOSOOOOOOOOOXXX",
+        "XXXXOOOOOOOOSOOOOOOOOOOOOSOOOOOOOOXXXX"
+    ];
+
+    window.onload = function() {
+        initEditor(initialLayout);
+        // 初始化時等待 DOM 渲染完成後再呼叫全景置中
+        setTimeout(zoomToFit, 100); 
+    };
+
+    function toggleRoomDisplay() {
+        document.body.classList.toggle('show-room', document.getElementById('toggleRoomId').checked);
+    }
+
+    function changeViewDirection() {
+        const isBack = document.querySelector('input[name="viewDir"]:checked').value === 'back';
+        const container = document.getElementById('mapContainer');
+        const theater = document.getElementById('theaterLayout');
+        const stage = document.querySelector('.stage');
+        
+        if (isBack) {
+            container.classList.add('direction-reversed');
+            theater.classList.add('direction-reversed');
+            stage.innerHTML = "舞 台 方 向<br><span style='font-size:12px; letter-spacing:2px; color:#e74c3c;'>您正站在舞台上，面向後方</span>";
+        } else {
+            container.classList.remove('direction-reversed');
+            theater.classList.remove('direction-reversed');
+            stage.innerHTML = "舞 台 方 向<br><span style='font-size:12px; letter-spacing:2px; color:#7f8c8d;'>(右至左編號)</span>";
+        }
+        setTimeout(() => { drawMinimap(); zoomToFit(); }, 100);
+    }
+
+    let currentTool = 'seat', editorDisplayMode = 'absolute';
+
+    function changeNumMode() {
+        numberingMode = document.querySelector('input[name="numMode"]:checked').value;
+        document.querySelectorAll('.editor-row').forEach(updateRowEditorDisplay);
+    }
+
+    function setTool(tool) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('.tool-' + tool).classList.add('active');
+    }
+
+    function rebuildGrid() {
+        if(!confirm("重新設定行列會清空目前的規劃，確定嗎？")) return;
+        ROWS = parseInt(document.getElementById('inputRows').value);
+        COLS = parseInt(document.getElementById('inputCols').value);
+        initEditor();
+        setTimeout(zoomToFit, 100);
+    }
+
+    function refreshFacilities() {
+        const str = document.getElementById('facilityInput').value;
+        const renderTo = (containerId) => {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            let rear = container.querySelector('.rear-facility');
+            if (rear) rear.remove();
+            
+            if (str.trim()) {
+                rear = document.createElement('div');
+                rear.className = 'rear-facility';
+                str.split(',').forEach(item => {
+                    const text = item.trim();
+                    if (!text) return;
+                    const box = document.createElement('div');
+                    box.className = 'facility-box';
+                    box.innerText = text;
+                    if (text.includes('門')) box.classList.add('facility-door');
+                    else if (text.includes('控')) box.classList.add('facility-audio');
+                    else if (text.includes('階') || text.includes('梯')) box.classList.add('facility-stair-end');
+                    rear.appendChild(box);
+                });
+                container.appendChild(rear);
+            }
+        };
+        renderTo('editorLayout');
+        renderTo('theaterLayout');
+        setTimeout(drawMinimap, 100);
+    }
+
+    function initEditor(layoutArr = null) {
+        const container = document.getElementById('editorLayout');
+        container.innerHTML = '';
+        totalValidSeats = 0;
+
+        for (let r = 1; r <= ROWS; r++) {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'editor-row';
+            const rowLabel = document.createElement('div');
+            rowLabel.className = 'row-label'; rowLabel.innerText = `列 ${r}`;
+            rowDiv.appendChild(rowLabel);
+
+            for (let c = COLS; c >= 1; c--) {
+                const cell = document.createElement('div');
+                cell.className = 'editor-cell';
+                cell.dataset.r = r; cell.dataset.c = c;
+                
+                let char = 'O';
+                if(layoutArr && layoutArr[r-1]) { char = layoutArr[r-1][COLS - c] || 'O'; }
+                
+                if (char === 'O') cell.dataset.state = 'seat';
+                else if (char === 'S') cell.dataset.state = 'stair';
+                else if (char === 'R') cell.dataset.state = 'reserved';
+                else cell.dataset.state = 'empty';
+
+                cell.onmousedown = (e) => { if(e.button === 0) { isLeftMouseDown = true; applyEditorTool(cell); } };
+                cell.onmouseenter = () => { if(isLeftMouseDown) applyEditorTool(cell); };
+                rowDiv.appendChild(cell);
+            }
+            const cap = document.createElement('div');
+            cap.className = 'capacity-label'; cap.id = `capacity-${r}`;
+            rowDiv.appendChild(cap);
+            container.appendChild(rowDiv);
+            updateRowEditorDisplay(rowDiv);
+        }
+        refreshFacilities();
+    }
+
+    function applyEditorTool(cell) {
+        cell.dataset.state = currentTool;
+        updateRowEditorDisplay(cell.parentElement);
+        drawMinimap();
+    }
+
+    function updateRowEditorDisplay(rowDiv) {
+        let capacity = 0, rel = 1, absCol = 1, seqCol = 1;
+        const cells = Array.from(rowDiv.querySelectorAll('.editor-cell'));
+        
+        for (let i = cells.length - 1; i >= 0; i--) {
+            const cell = cells[i], state = cell.dataset.state;
+            let currentNum = null;
+            
+            if (numberingMode === 'absolute') {
+                if (state !== 'stair') { currentNum = absCol; absCol++; }
+            } else {
+                if (state === 'seat' || state === 'reserved') { currentNum = seqCol; seqCol++; }
+            }
+
+            const r = cell.dataset.r;
+            if (state === 'seat') {
+                capacity++;
+                const id = `${r}-${currentNum < 10 ? '0'+currentNum : currentNum}`;
+                cell.dataset.absId = id;
+                cell.innerText = editorDisplayMode === 'absolute' ? id : rel;
+                rel++;
+                cell.className = 'editor-cell state-seat';
+            } else if (state === 'stair') {
+                cell.innerText = '階'; cell.className = 'editor-cell state-stair';
+                delete cell.dataset.absId;
+            } else if (state === 'reserved') {
+                cell.innerText = '保'; cell.className = 'editor-cell state-reserved';
+                const id = `${r}-${currentNum < 10 ? '0'+currentNum : currentNum}`;
+                cell.dataset.absId = id;
+            } else {
+                cell.innerText = ''; cell.className = 'editor-cell state-empty';
+                if (currentNum !== null) {
+                    const id = `${r}-${currentNum < 10 ? '0'+currentNum : currentNum}`;
+                    cell.dataset.absId = id;
+                } else {
+                    delete cell.dataset.absId;
+                }
+            }
+        }
+        document.getElementById(`capacity-${cells[0].dataset.r}`).innerText = `可坐: ${capacity}人`;
+    }
+
+    function toggleEditorDisplay() {
+        editorDisplayMode = editorDisplayMode === 'absolute' ? 'relative' : 'absolute';
+        document.querySelectorAll('.editor-row').forEach(updateRowEditorDisplay);
+    }
+
+    function goToStep2() {
+        seatMapConfig = {}; totalValidSeats = 0;
+        document.querySelectorAll('.editor-row').forEach(row => {
+            row.querySelectorAll('.editor-cell').forEach(cell => {
+                if(cell.dataset.absId) {
+                    seatMapConfig[cell.dataset.absId] = cell.dataset.state;
+                    if(cell.dataset.state === 'seat') totalValidSeats++;
+                }
+            });
+        });
+        mode = 'step2';
+        document.getElementById('step1-panel').style.display = 'none';
+        document.getElementById('step2-panel').style.display = 'block';
+        document.getElementById('editorLayout').style.display = 'none';
+        const tl = document.getElementById('theaterLayout');
+        tl.style.display = 'block'; tl.classList.add('zone-allocation-mode');
+        document.getElementById('modeIndicator').innerText = '步驟二：考區劃分';
+        document.getElementById('modeIndicator').style.background = '#f39c12';
+        buildTheaterLayout(); renderZoneList(); zoomToFit();
+    }
+
+    function backToStep1() {
+        mode = 'step1';
+        document.getElementById('step1-panel').style.display = 'block';
+        document.getElementById('step2-panel').style.display = 'none';
+        document.getElementById('editorLayout').style.display = 'block';
+        document.getElementById('theaterLayout').style.display = 'none';
+        document.getElementById('modeIndicator').innerText = '步驟一：版型微調';
+        document.getElementById('modeIndicator').style.background = '#e74c3c';
+        zoomToFit();
+    }
+
+    function buildTheaterLayout() {
+        const container = document.getElementById('theaterLayout');
+        container.innerHTML = '';
+        const editorRows = document.querySelectorAll('.editor-row');
+        
+        editorRows.forEach((row, rIdx) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'theater-row';
+            const rowLabel = document.createElement('div');
+            rowLabel.className = 'row-label'; rowLabel.innerText = `列 ${rIdx+1}`;
+            rowDiv.appendChild(rowLabel);
+
+            const editorCells = Array.from(row.querySelectorAll('.editor-cell'));
+            editorCells.forEach(ec => {
+                const block = document.createElement('div');
+                const state = ec.dataset.state;
+                const seatId = ec.dataset.absId;
+
+                if (state === 'seat') {
+                    block.className = 'block seat-cell-large';
+                    block.id = `large-seat-${seatId}`;
+                    let normalizedId = seatId.replace(/-0(\d)/, '-$1');
+                    block.dataset.searchKey = `${seatId} ${normalizedId}`;
+                    
+                    block.innerHTML = `<div class="seat-top-bar"><div class="seat-id">${seatId}</div><div class="seat-room" id="room-${seatId}"></div></div><div class="seat-content" id="content-${seatId}"></div><div class="seat-zone" id="zone-${seatId}"></div>`;
+                    block.onmousedown = (e) => { 
+                        if(isDraggingMap) return;
+                        if(e.button === 0) handleSeatClick(seatId); 
+                        else if(e.button === 2) handleSeatRightClick(seatId); 
+                    };
+                    block.onmouseenter = () => { 
+                        if(mode === 'step2' && isLeftMouseDown) handleSeatClick(seatId); 
+                        else if(mode === 'step2' && isRightMouseDown) handleSeatRightClick(seatId); 
+                    };
+                } else if (state === 'stair') {
+                    block.className = 'block stair-block'; block.innerText = '階梯';
+                } else if (state === 'reserved') {
+                    block.className = 'block reserved-block'; block.innerText = '保留';
+                } else {
+                    block.className = 'block empty-block';
+                }
+                rowDiv.appendChild(block);
+            });
+            container.appendChild(rowDiv);
+        });
+        refreshFacilities();
+        syncDataToMap();
+    }
+
+    function addZone() {
+        const name = document.getElementById('newZoneInput').value.trim();
+        if(!name || zones.find(z => z.name === name)) return;
+        zones.push({ name: name, color: colorPalette[colorIdx % colorPalette.length], count: 0 });
+        colorIdx++; document.getElementById('newZoneInput').value = '';
+        renderZoneList(); selectZone(name);
+    }
+
+    function renderZoneList() {
+        const list = document.getElementById('zoneList');
+        list.innerHTML = '';
+        let assigned = 0;
+        zones.forEach(z => z.count = 0);
+        Object.values(seatZoneMapping).forEach(n => { let z = zones.find(x => x.name === n); if(z){z.count++; assigned++;} });
+
+        document.getElementById('zoneSummary').innerHTML = `總座位：<span>${totalValidSeats}</span> | 尚未安排：<span style="color:#27ae60;">${totalValidSeats - assigned}</span>`;
+
+        zones.forEach(z => {
+            const div = document.createElement('div');
+            div.className = `zone-item ${activeZoneName === z.name ? 'active' : ''}`;
+            div.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><input type="color" class="zone-color-picker" value="${z.color}" onchange="updateZoneColor('${z.name}', this.value)" onclick="event.stopPropagation()"><span>${z.name}</span></div><div style="font-size:12px;">${z.count} 座</div>`;
+            div.onclick = () => selectZone(z.name);
+            list.appendChild(div);
+        });
+    }
+
+    function selectZone(name) { activeZoneName = name; renderZoneList(); }
+    function updateZoneColor(name, color) { const z = zones.find(x => x.name === name); if(z){z.color = color; syncDataToMap(); renderZoneList();} }
+
+    function handleSeatClick(id) { 
+        if(mode === 'step2' && activeZoneName) { 
+            seatZoneMapping[id] = activeZoneName; syncDataToMap(); renderZoneList(); 
+        } else if(mode === 'step3' && currentActivePerson) { 
+            rosterData[currentActivePerson.index][currentActivePerson.type].seat = id; currentActivePerson = null; renderUnassignedList(); syncDataToMap(); 
+        } 
+    }
+    
+    function handleSeatRightClick(id) { if(mode === 'step2'){ delete seatZoneMapping[id]; syncDataToMap(); renderZoneList(); } }
+
+    function syncDataToMap() {
+        document.querySelectorAll('.seat-content, .seat-room, .seat-zone').forEach(el => el.innerHTML = '');
+        document.querySelectorAll('.seat-cell-large').forEach(el => { 
+            el.style.borderColor = '#ced6e0'; el.style.backgroundColor = '#f1f2f6'; el.classList.remove('assigned'); 
+            const idNode = el.querySelector('.seat-id');
+            if(idNode) {
+                const sId = idNode.innerText;
+                el.dataset.searchKey = sId + " " + sId.replace(/-0(\d)/, '-$1');
+            }
+        });
+
+        Object.keys(seatZoneMapping).forEach(id => {
+            const z = zones.find(x => x.name === seatZoneMapping[id]);
+            const block = document.getElementById(`large-seat-${id}`), tag = document.getElementById(`zone-${id}`);
+            if(block && z) { block.style.borderColor = z.color; block.style.backgroundColor = z.color + '25'; if(tag){ tag.innerText = z.name; tag.style.background = z.color; } }
+        });
+
+        rosterData.forEach(data => {
+            ['main', 'sub'].forEach(t => {
+                const p = data[t];
+                if (p.seat) {
+                    const roomEl = document.getElementById(`room-${p.seat}`), contEl = document.getElementById(`content-${p.seat}`), cell = document.getElementById(`large-seat-${p.seat}`);
+                    if (contEl && cell) {
+                        if(roomEl) roomEl.innerText = data.room.replace(/第(\d+)試場/, '試場$1');
+                        contEl.innerHTML = `${p.name}<br><span style="font-size:10px;color:#7f8c8d;">(${t==='main'?'主':'襄'})</span>`;
+                        cell.style.backgroundColor = '#fff'; cell.classList.add('assigned'); 
+                        cell.dataset.searchKey += " " + (p.name + data.room + (seatZoneMapping[p.seat] || "")).toLowerCase();
+                    }
+                }
+            });
+        });
+        setTimeout(drawMinimap, 50);
+    }
+
+    function goToStep3() {
+        mode = 'step3';
+        document.getElementById('step2-panel').style.display = 'none';
+        document.getElementById('step3-panel').style.display = 'block';
+        document.getElementById('theaterLayout').classList.remove('zone-allocation-mode');
+        document.getElementById('modeIndicator').innerText = '步驟三：人員安排';
+        document.getElementById('modeIndicator').style.background = '#3498db';
+        setTimeout(drawMinimap, 50);
+    }
+
+    function backToStep2() {
+        mode = 'step2';
+        document.getElementById('step2-panel').style.display = 'block';
+        document.getElementById('step3-panel').style.display = 'none';
+        document.getElementById('theaterLayout').classList.add('zone-allocation-mode');
+        document.getElementById('modeIndicator').innerText = '步驟二：考區劃分';
+        document.getElementById('modeIndicator').style.background = '#f39c12';
+        setTimeout(drawMinimap, 50);
+    }
+
+    function downloadTemplate() {
+        const BOM = '\uFEFF';
+        const csv = BOM + "考區,試場別,主試,襄試,主試位置,襄試位置\n九德國小,第1試場,王大明,陳小華,=\"13-02\",=\"13-03\"\n九德國小,第2試場,林小美,張大同,,";
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '人員安排範例.csv'; a.click();
+    }
+
+    function loadRoster() {
+        const input = document.getElementById('rosterInput').value.trim();
+        if (!input) return;
+        rosterData = [];
+        const rows = input.split('\n');
+        rows.forEach((row, idx) => {
+            const c = row.split('\t').map(x => x.replace(/^="(.+)"$/, '$1').trim()); 
+            if (c[0] === '考區') return;
+            if (c.length >= 4) {
+                if(c[0] && !zones.find(z => z.name === c[0])) {
+                    zones.push({ name: c[0], color: colorPalette[colorIdx % colorPalette.length], count: 0 }); colorIdx++;
+                }
+                rosterData.push({ id: idx, zone: c[0], room: c[1], main: { name: c[2], seat: c[4] || '' }, sub: { name: c[3], seat: c[5] || '' } });
+            }
+        });
+        renderUnassignedList(); syncDataToMap(); alert("名單已載入！");
+    }
+
+    function renderUnassignedList() {
+        const list = document.getElementById('unassignedList'); list.innerHTML = '';
+        rosterData.forEach((data, index) => {
+            if (!data.main.seat && data.main.name) list.appendChild(createPersonCard(index, 'main', data.main.name, data.zone, data.room));
+            if (!data.sub.seat && data.sub.name) list.appendChild(createPersonCard(index, 'sub', data.sub.name, data.zone, data.room));
+        });
+        if(list.innerHTML === '') list.innerHTML = '<div style="text-align:center; color:#27ae60; padding:10px;">🎉 劃位完成！</div>';
+    }
+
+    function createPersonCard(index, type, name, zone, room) {
+        const div = document.createElement('div'), z = zones.find(x => x.name === zone);
+        div.className = 'person-item';
+        div.innerHTML = `<span>${name} <span class="badge">${type==='main'?'主':'襄'}</span></span> <span class="badge" style="background:${z?z.color:'#bdc3c7'}; color:white;">${room}</span>`;
+        div.onclick = () => { document.querySelectorAll('.person-item').forEach(el => el.classList.remove('active')); div.classList.add('active'); currentActivePerson = { index, type }; };
+        return div;
+    }
+
+    function goToStep4() {
+        mode = 'view';
+        document.getElementById('step3-panel').style.display = 'none';
+        document.getElementById('step4-panel').style.display = 'block';
+        document.getElementById('modeIndicator').innerText = '步驟四：🔒 查詢模式';
+        document.getElementById('modeIndicator').style.background = '#27ae60';
+        zoomToFit();
+    }
+
+    function backToStep3() {
+        mode = 'step3';
+        document.getElementById('step3-panel').style.display = 'block';
+        document.getElementById('step4-panel').style.display = 'none';
+        document.getElementById('modeIndicator').innerText = '步驟三：人員安排';
+        document.getElementById('modeIndicator').style.background = '#3498db';
+    }
+
+    // --- 取得元素在 mapContainer 中的絕對偏移量 ---
+    function getRelativePos(el, parent) {
+        let x = 0, y = 0;
+        while (el && el !== parent) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+        return { x, y };
+    }
+
+    let lastFoundSeat = null;
+    function searchSeat() {
+        const k = document.getElementById('searchInput').value.toLowerCase().trim();
+        if (!k) {
+            document.querySelectorAll('.highlighted-seat').forEach(el => el.classList.remove('highlighted-seat'));
+            lastFoundSeat = null; return;
+        }
+
+        let found = null;
+        document.querySelectorAll('.seat-cell-large').forEach(cell => {
+            const match = (cell.dataset.searchKey || "").includes(k);
+            if (match) { 
+                if (!cell.classList.contains('highlighted-seat')) cell.classList.add('highlighted-seat'); 
+                if (!found) found = cell; 
+            } else {
+                cell.classList.remove('highlighted-seat');
+            }
+        });
+        
+        // 🚀 置中修正演算法：無論如何縮放與旋轉，皆完美置中
+        if (found && found !== lastFoundSeat) { 
+            lastFoundSeat = found;
+            const container = document.getElementById('mapContainer');
+            container.style.transition = 'none';
+            scale = 1.3; 
+            
+            const pos = getRelativePos(found, container);
+            const seatCenterX = pos.x + found.offsetWidth / 2;
+            const seatCenterY = pos.y + found.offsetHeight / 2;
+            
+            translateX = (mapWrapper.clientWidth / 2) - (seatCenterX * scale);
+            translateY = (mapWrapper.clientHeight / 2) - (seatCenterY * scale);
+            
+            updateTransform(); 
+            container.offsetHeight; 
+            container.style.transition = 'transform 0.15s ease';
+        } else if (!found) {
+            lastFoundSeat = null;
+        }
+    }
+
+    function getLayoutArray() {
+        let arr = [];
+        document.querySelectorAll('.editor-row').forEach(row => {
+            let str = "";
+            const cells = Array.from(row.querySelectorAll('.editor-cell'));
+            cells.forEach(c => {
+                const s = c.dataset.state;
+                if(s === 'seat') str += 'O';
+                else if(s === 'stair') str += 'S';
+                else if(s === 'reserved') str += 'R';
+                else str += 'X';
+            });
+            arr.push(str);
+        });
+        return arr;
+    }
+
+    function downloadZoneConfig() {
+        const currentLayout = getLayoutArray();
+        const facilityString = document.getElementById('facilityInput').value;
+        const config = { zones, seatZoneMapping, ROWS, COLS, numberingMode, layoutMap: currentLayout, facilityString };
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '考區分配設定.json'; a.click();
+    }
+
+    function uploadZoneConfig(e) {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const c = JSON.parse(ev.target.result);
+            if(c.zones){ 
+                zones = c.zones; seatZoneMapping = c.seatZoneMapping; 
+                ROWS = c.ROWS || ROWS; COLS = c.COLS || COLS;
+                document.getElementById('inputRows').value = ROWS;
+                document.getElementById('inputCols').value = COLS;
+                
+                if (c.numberingMode) {
+                    numberingMode = c.numberingMode;
+                    document.querySelector(`input[name="numMode"][value="${numberingMode}"]`).checked = true;
+                }
+                if (c.facilityString !== undefined) {
+                    document.getElementById('facilityInput').value = c.facilityString;
+                }
+                
+                initEditor(c.layoutMap || initialLayout);
+                buildTheaterLayout(); renderZoneList(); zoomToFit(); alert("匯入成功！");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ==========================================
+    // 縮放與平移核心 (0,0 原點制)
+    // ==========================================
+    const mapWrapper = document.getElementById('mapWrapper'), mapContainer = document.getElementById('mapContainer');
+    
+    mapWrapper.addEventListener('mousedown', (e) => {
+        if (e.button === 2 || (!e.target.closest('.editor-cell') && !e.target.closest('.seat-cell-large') && !e.target.closest('.minimap-wrapper'))) {
+            isDraggingMap = true;
+            isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY;
+        }
+    });
+    window.addEventListener('mousemove', (e) => { if (isDragging) { translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); } });
+    window.addEventListener('mouseup', () => { isDragging = false; setTimeout(() => { isDraggingMap = false; }, 50); });
+    
+    // 🚀 滾輪縮放：向著滑鼠游標的位置進行縮放
+    mapWrapper.addEventListener('wheel', (e) => { 
+        e.preventDefault(); 
+        const zoomAmount = e.deltaY < 0 ? 0.05 : -0.05;
+        const newScale = Math.max(0.1, Math.min(3, scale + zoomAmount));
+        if (newScale !== scale) {
+            const rect = mapWrapper.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            translateX = mouseX - (mouseX - translateX) * (newScale / scale);
+            translateY = mouseY - (mouseY - translateY) * (newScale / scale);
+            scale = newScale;
+            updateTransform();
+        }
+    });
+
+    function setZoom(d) { 
+        const newScale = Math.max(0.1, Math.min(3, scale + d)); 
+        const cX = mapWrapper.clientWidth / 2, cY = mapWrapper.clientHeight / 2;
+        translateX = cX - (cX - translateX) * (newScale / scale);
+        translateY = cY - (cY - translateY) * (newScale / scale);
+        scale = newScale;
+        updateTransform();
+    }
+    
+    // 🌍 全景置中精算
+    function zoomToFit() {
+        const wW = mapWrapper.clientWidth, wH = mapWrapper.clientHeight;
+        const cW = mapContainer.offsetWidth || 1, cH = mapContainer.offsetHeight || 1;
+        scale = Math.min(wW/cW, wH/cH) * 0.9;
+        if(scale > 1.5) scale = 1.5;
+        translateX = (wW - cW * scale) / 2; 
+        translateY = (wH - cH * scale) / 2; 
+        updateTransform();
+    }
+
+    function updateTransform() { 
+        mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`; 
+        updateMinimapViewport();
+    }
+
+    // ==========================================
+    // 🗺️ 全景縮圖 (Minimap) 模組
+    // ==========================================
+    const minimapWrapper = document.getElementById('minimapWrapper');
+    const minimapCanvas = document.getElementById('minimapCanvas');
+    const minimapViewport = document.getElementById('minimapViewport');
+    let isDraggingMinimap = false;
+
+    function drawMinimap() {
+        if(!minimapCanvas || !mapContainer.offsetWidth) return;
+        const ctx = minimapCanvas.getContext('2d');
+        const cW = mapContainer.offsetWidth, cH = mapContainer.offsetHeight;
+        const mW = 200; const mH = mW * (cH / cW);
+        
+        minimapWrapper.style.width = mW + 'px';
+        minimapWrapper.style.height = mH + 'px';
+        minimapCanvas.width = mW; minimapCanvas.height = mH;
+        
+        ctx.clearRect(0, 0, mW, mH);
+        ctx.fillStyle = '#f1f2f6'; ctx.fillRect(0,0, mW, mH); // 底色
+        const ratio = mW / cW;
+
+        // 畫舞台
+        const stage = document.querySelector('.stage');
+        if (stage) {
+            const pos = getRelativePos(stage, mapContainer);
+            ctx.fillStyle = '#eccc68';
+            ctx.fillRect(pos.x * ratio, pos.y * ratio, stage.offsetWidth * ratio, stage.offsetHeight * ratio);
+        }
+
+        // 畫方塊
+        const sourceBlocks = mode === 'step1' ? document.querySelectorAll('.editor-cell') : document.querySelectorAll('.block');
+        sourceBlocks.forEach(b => {
+            if(b.classList.contains('empty-block') || b.classList.contains('state-empty') || b.style.visibility === 'hidden') return;
+            const pos = getRelativePos(b, mapContainer);
+            
+            if (b.classList.contains('seat-cell-large') || b.classList.contains('state-seat')) {
+                ctx.fillStyle = (b.style.borderColor && b.style.borderColor !== 'rgb(206, 214, 224)' && b.style.borderColor !== '#ced6e0') ? b.style.borderColor : '#bdc3c7';
+            } else if (b.classList.contains('stair-block') || b.classList.contains('state-stair')) {
+                ctx.fillStyle = '#576574';
+            } else if (b.classList.contains('reserved-block') || b.classList.contains('state-reserved')) {
+                ctx.fillStyle = '#f39c12';
+            }
+            ctx.fillRect(pos.x * ratio, pos.y * ratio, b.offsetWidth * ratio, b.offsetHeight * ratio);
+        });
+
+        // 畫設施
+        document.querySelectorAll('.facility-box').forEach(f => {
+            const pos = getRelativePos(f, mapContainer);
+            ctx.fillStyle = getComputedStyle(f).backgroundColor;
+            ctx.fillRect(pos.x * ratio, pos.y * ratio, f.offsetWidth * ratio, f.offsetHeight * ratio);
+        });
+        updateMinimapViewport();
+    }
+
+    function updateMinimapViewport() {
+        if (!minimapCanvas.width) return;
+        const cW = mapContainer.offsetWidth || 1;
+        const ratio = minimapCanvas.width / cW;
+        
+        const vpW = (mapWrapper.clientWidth / scale) * ratio;
+        const vpH = (mapWrapper.clientHeight / scale) * ratio;
+        const vpX = (-translateX / scale) * ratio;
+        const vpY = (-translateY / scale) * ratio;
+
+        minimapViewport.style.width = vpW + 'px';
+        minimapViewport.style.height = vpH + 'px';
+        minimapViewport.style.left = vpX + 'px';
+        minimapViewport.style.top = vpY + 'px';
+    }
+
+    minimapWrapper.addEventListener('mousedown', (e) => { isDraggingMinimap = true; moveMapFromMinimap(e); });
+    window.addEventListener('mousemove', (e) => { if (isDraggingMinimap) moveMapFromMinimap(e); });
+    window.addEventListener('mouseup', () => { isDraggingMinimap = false; });
+
+    function moveMapFromMinimap(e) {
+        const rect = minimapWrapper.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        const cW = mapContainer.offsetWidth || 1;
+        const ratio = minimapCanvas.width / cW;
+        
+        const vpW = (mapWrapper.clientWidth / scale) * ratio;
+        const vpH = (mapWrapper.clientHeight / scale) * ratio;
+
+        translateX = -(clickX - vpW / 2) / ratio * scale;
+        translateY = -(clickY - vpH / 2) / ratio * scale;
+        updateTransform();
+    }
+
+    // --- 匯出公開版 ---
+    function exportStandaloneHTML() {
+        const theater = document.getElementById('theaterLayout').innerHTML;
+        const facilities = document.querySelector('.rear-facility') ? document.querySelector('.rear-facility').outerHTML : '';
+        const css = document.querySelector('style').innerHTML;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>座位查詢</title><style>${css} body { background: #1e272e; } .sidebar { display:none; } .header { flex-direction: row !important; } .main-container { flex-direction: column !important; } .map-wrapper { height: 100vh !important; } .search-float { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 1000; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); } .search-float input[type="text"] { width: 100%; border: 2px solid #3498db; padding: 12px; font-size: 16px; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; } .search-toggles { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; } .search-toggles label { font-weight: bold; color: #2c3e50; cursor: pointer; }</style></head><body oncontextmenu="return false;" class="show-room">
+        <div class="header"><h2>🔍 座位查詢</h2></div>
+        <div class="search-float">
+            <input type="text" id="searchInput" onkeyup="searchSeat()" placeholder="輸入姓名、試場或座號(如3-17)...">
+            <div class="search-toggles">
+                <label><input type="checkbox" checked onchange="document.body.classList.toggle('show-room')"> 顯示試場</label>
+                <label><input type="radio" name="viewDir" value="front" checked onchange="changeViewDirection()"> 面對舞台</label>
+                <label><input type="radio" name="viewDir" value="back" onchange="changeViewDirection()"> 背對舞台</label>
+            </div>
+        </div>
+        <div class="map-wrapper" id="mapWrapper">
+            <div id="minimapWrapper" class="minimap-wrapper"><canvas id="minimapCanvas"></canvas><div id="minimapViewport" class="minimap-viewport"></div></div>
+            <div class="map-container" id="mapContainer"><div class="stage">舞 台 方 向<br><span style="font-size:12px; letter-spacing:2px; color:#7f8c8d;">(右至左編號)</span></div>${theater}</div>
+        </div>
+        <div class="zoom-controls">
+            <button onclick="setZoom(0.1)">➕</button>
+            <button onclick="setZoom(-0.1)">➖</button>
+            <button onclick="zoomToFit()" style="background:#8e44ad;">🌍 全景</button>
+        </div>
+        <script>
+            function getRelativePos(el, parent) { let x = 0, y = 0; while (el && el !== parent) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return { x, y }; }
+            function changeViewDirection() {
+                const isBack = document.querySelector('input[name="viewDir"]:checked').value === 'back';
+                const container = document.getElementById('mapContainer');
+                const theater = document.querySelector('.theater-row').parentElement;
+                const stage = document.querySelector('.stage');
+                if (isBack) {
+                    container.classList.add('direction-reversed'); theater.classList.add('direction-reversed');
+                    stage.innerHTML = "舞 台 方 向<br><span style='font-size:12px; letter-spacing:2px; color:#e74c3c;'>您正站在舞台上，面向後方</span>";
+                } else {
+                    container.classList.remove('direction-reversed'); theater.classList.remove('direction-reversed');
+                    stage.innerHTML = "舞 台 方 向<br><span style='font-size:12px; letter-spacing:2px; color:#7f8c8d;'>(右至左編號)</span>";
+                }
+                setTimeout(() => { drawMinimap(); zoomToFit(); }, 100);
+            }
+            const mapWrapper = document.getElementById('mapWrapper'), mapContainer = document.getElementById('mapContainer');
+            let scale = 0.5, translateX = 0, translateY = 0, isDragging = false, startX, startY;
+            mapWrapper.addEventListener('mousedown', (e) => { if(e.target.closest('.minimap-wrapper')) return; isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY; });
+            window.addEventListener('mousemove', (e) => { if (isDragging) { translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); } });
+            window.addEventListener('mouseup', () => isDragging = false);
+            mapWrapper.addEventListener('wheel', (e) => { 
+                e.preventDefault(); const d = e.deltaY < 0 ? 0.05 : -0.05; const nS = Math.max(0.1, Math.min(3, scale + d));
+                const rect = mapWrapper.getBoundingClientRect(), mX = e.clientX - rect.left, mY = e.clientY - rect.top;
+                translateX = mX - (mX - translateX) * (nS / scale); translateY = mY - (mY - translateY) * (nS / scale);
+                scale = nS; updateTransform(); 
+            });
+            
+            // 手機觸控拖曳與雙指縮放支援
+            let initialDist = null, initialScale = null;
+            mapWrapper.addEventListener('touchstart', (e) => {
+                if(e.touches.length === 1) { isDragging = true; startX = e.touches[0].clientX - translateX; startY = e.touches[0].clientY - translateY; }
+                else if(e.touches.length === 2) { isDragging = false; initialDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); initialScale = scale; }
+            });
+            window.addEventListener('touchmove', (e) => {
+                if(e.touches.length === 1 && isDragging) { translateX = e.touches[0].clientX - startX; translateY = e.touches[0].clientY - startY; updateTransform(); }
+                else if(e.touches.length === 2 && initialDist) {
+                    e.preventDefault();
+                    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    scale = Math.max(0.1, Math.min(3, initialScale * (dist / initialDist))); updateTransform();
+                }
+            }, {passive: false});
+            window.addEventListener('touchend', () => { isDragging = false; initialDist = null; });
+
+            function setZoom(d) { const nS = Math.max(0.1, Math.min(3, scale + d)); const cX = mapWrapper.clientWidth/2, cY = mapWrapper.clientHeight/2; translateX = cX - (cX - translateX)*(nS/scale); translateY = cY - (cY - translateY)*(nS/scale); scale = nS; updateTransform(); }
+            function zoomToFit() { const wW = mapWrapper.clientWidth, wH = mapWrapper.clientHeight, cW = mapContainer.offsetWidth||1, cH = mapContainer.offsetHeight||1; scale = Math.min(wW/cW, wH/cH)*0.9; if(scale>1.5) scale=1.5; translateX = (wW - cW*scale)/2; translateY = (wH - cH*scale)/2; updateTransform(); }
+            function updateTransform() { mapContainer.style.transform = \`translate(\${translateX}px, \${translateY}px) scale(\${scale})\`; updateMinimapViewport(); }
+            
+            let lastFoundSeat = null;
+            function searchSeat() { 
+                const k = document.getElementById('searchInput').value.toLowerCase().trim();
+                if(!k) { document.querySelectorAll('.highlighted-seat').forEach(el => el.classList.remove('highlighted-seat')); lastFoundSeat = null; return; }
+                let found = null;
+                document.querySelectorAll('.seat-cell-large').forEach(cell => {
+                    if((cell.dataset.searchKey || "").includes(k)) { if(!cell.classList.contains('highlighted-seat')) cell.classList.add('highlighted-seat'); if(!found) found = cell; } else { cell.classList.remove('highlighted-seat'); }
+                });
+                if(found && found !== lastFoundSeat) { 
+                    lastFoundSeat = found; mapContainer.style.transition = 'none'; scale = 1.3; 
+                    const pos = getRelativePos(found, mapContainer);
+                    translateX = (mapWrapper.clientWidth / 2) - ((pos.x + found.offsetWidth/2) * scale);
+                    translateY = (mapWrapper.clientHeight / 2) - ((pos.y + found.offsetHeight/2) * scale);
+                    updateTransform(); mapContainer.offsetHeight; mapContainer.style.transition = 'transform 0.15s ease';
+                } else if(!found) lastFoundSeat = null;
+            }
+
+            // Minimap JS
+            const minimapWrapper = document.getElementById('minimapWrapper'), minimapCanvas = document.getElementById('minimapCanvas'), minimapViewport = document.getElementById('minimapViewport');
+            let isDraggingMinimap = false;
+            function drawMinimap() {
+                if(!minimapCanvas || !mapContainer.offsetWidth) return;
+                const ctx = minimapCanvas.getContext('2d'), cW = mapContainer.offsetWidth, cH = mapContainer.offsetHeight, mW = 200, mH = mW * (cH / cW);
+                minimapWrapper.style.width = mW + 'px'; minimapWrapper.style.height = mH + 'px'; minimapCanvas.width = mW; minimapCanvas.height = mH;
+                ctx.clearRect(0, 0, mW, mH); ctx.fillStyle = '#f1f2f6'; ctx.fillRect(0,0, mW, mH);
+                const ratio = mW / cW;
+                const stage = document.querySelector('.stage'); if (stage) { const pos = getRelativePos(stage, mapContainer); ctx.fillStyle = '#eccc68'; ctx.fillRect(pos.x * ratio, pos.y * ratio, stage.offsetWidth * ratio, stage.offsetHeight * ratio); }
+                document.querySelectorAll('.block').forEach(b => {
+                    if(b.classList.contains('empty-block') || b.style.visibility === 'hidden') return;
+                    const pos = getRelativePos(b, mapContainer);
+                    if (b.classList.contains('seat-cell-large')) ctx.fillStyle = (b.style.borderColor && b.style.borderColor !== 'rgb(206, 214, 224)') ? b.style.borderColor : '#bdc3c7';
+                    else if (b.classList.contains('stair-block')) ctx.fillStyle = '#576574'; else if (b.classList.contains('reserved-block')) ctx.fillStyle = '#f39c12';
+                    ctx.fillRect(pos.x * ratio, pos.y * ratio, b.offsetWidth * ratio, b.offsetHeight * ratio);
+                });
+                document.querySelectorAll('.facility-box').forEach(f => { const pos = getRelativePos(f, mapContainer); ctx.fillStyle = getComputedStyle(f).backgroundColor; ctx.fillRect(pos.x * ratio, pos.y * ratio, f.offsetWidth * ratio, f.offsetHeight * ratio); });
+                updateMinimapViewport();
+            }
+            function updateMinimapViewport() {
+                if (!minimapCanvas.width) return;
+                const ratio = minimapCanvas.width / (mapContainer.offsetWidth || 1);
+                minimapViewport.style.width = ((mapWrapper.clientWidth / scale) * ratio) + 'px';
+                minimapViewport.style.height = ((mapWrapper.clientHeight / scale) * ratio) + 'px';
+                minimapViewport.style.left = ((-translateX / scale) * ratio) + 'px';
+                minimapViewport.style.top = ((-translateY / scale) * ratio) + 'px';
+            }
+            minimapWrapper.addEventListener('mousedown', (e) => { isDraggingMinimap = true; moveMapFromMinimap(e); });
+            window.addEventListener('mousemove', (e) => { if (isDraggingMinimap) moveMapFromMinimap(e); });
+            window.addEventListener('mouseup', () => { isDraggingMinimap = false; });
+            function moveMapFromMinimap(e) {
+                const rect = minimapWrapper.getBoundingClientRect(), clickX = e.clientX - rect.left, clickY = e.clientY - rect.top, ratio = minimapCanvas.width / (mapContainer.offsetWidth || 1);
+                const vpW = (mapWrapper.clientWidth / scale) * ratio, vpH = (mapWrapper.clientHeight / scale) * ratio;
+                translateX = -(clickX - vpW / 2) / ratio * scale; translateY = -(clickY - vpH / 2) / ratio * scale; updateTransform();
+            }
+            setTimeout(() => { changeViewDirection(); zoomToFit(); }, 100); 
+        <\/script></body></html>`;
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '座位查詢公開版.html'; a.click();
+    }
+</script>
+
+</body>
+</html>
